@@ -1,0 +1,322 @@
+<div>
+	<style>
+		.modal img{
+			width: 240px;
+			height: 100px;
+			vertical-align: middle;
+			cursor: pointer;
+		}
+	</style>
+	<script>
+		var tbody = document.getElementsByTagName('tbody')[0];
+		var btnsDiv = document.getElementsByClassName('btn-div')[0];
+		var beginmodals = document.getElementsByClassName('beginmodal')[0];
+		var beginmodalss = document.getElementsByClassName('beginmodals')[0];
+		var pageDiv = document.getElementsByClassName('page-div')[0];
+		beginmodal();
+		//初始化页面
+		findArticleByCategoryId();
+		//新增
+		btnsDiv.onclick = function(event){
+			var target = event.target;
+			if(target.innerText==='批量删除'){
+				var inputs = document.getElementsByTagName('input');
+				// 将类数组对象转换成数组
+				inputs = Array.prototype.slice.call(inputs,0);
+				//过滤选中的checkbox,获取要批量删除的id
+				var ids = inputs.filter(function(item){
+						return item.checked;
+					}).map(function(item){
+						return item.value;
+					});
+				 batchDeleteArticle ({ids:ids.join()});
+			}
+			if(target.innerText==='新增'){
+
+				//清空表单数据,显示模态框
+				$('.modal [type=text],.modal [name="categoryComment"]').val(null);
+				//设置不选中的状态
+				$('.modal [name="categoryParent"]:selected').prop('seleced',false);
+				//设置单选框不选中
+				$('.modal [name="infolist"]:checked').prop('checked',false);					
+			}
+		}
+
+		//初始化下拉列表的函数
+			function beginmodal(){
+				getAjax('/manager/category/findAllCategory','get',null,function(res){
+					//追加DOM res就是数据 遍历内部数据,获取DOM节点,追加到option中
+					var str = '';
+					if(res.data){
+						res.data.forEach(function(item){
+							str += `		
+								<option value="" id="`+item.id+`">`+item.name+`</option>	
+				  			`;		
+						});
+					}
+					beginmodals.innerHTML = str;
+					beginmodalss.innerHTML = str;
+				},function(error){
+					console.log(error);
+				});
+			}
+
+		//点击提交时的事件
+		$('#handup').click(function(){
+
+			//获取数据,封装成对象,传递给后台
+			var title = $('.modal [type=text]').val();
+			var categoryId = $('.modal [name="categoryParent"]:selected').val();
+			var liststyle = $('.modal [name="infolist"]:checked').val();
+			var content = $('.modal [name="categoryComment"]').val();
+			// console.log(name,parentId,comment);
+			if(title&&liststyle&&content){
+				// 封装数据,对接口
+				var obj = {
+					title:title,
+					categoryId:categoryId,
+					liststyle:liststyle,
+					content:content
+				};
+				// console.log('传递给后台的数据是:',obj);
+				saveOrUpdateArticle(obj);						
+				//提交数据给后台
+				//提交成功后的回调函数里,更新数据,关闭模态框.
+				$('#myModal').modal('hide');
+			}else{
+				alert('请输入完整的信息');
+			}
+		});
+
+		//新增和修改的函数
+		function saveOrUpdateArticle(obj){
+				getAjax('/manager/article/saveOrUpdateArticle','post',obj,function(res){
+					findArticleByCategoryId();
+				},function(error){
+					console.log(error);
+				});
+			}
+		//批量删除的函数
+			function batchDeleteArticle(obj){
+				getAjax('/manager/article/batchDeleteArticle','post',obj,function(res){
+					findArticleByCategoryId();
+				},function(error){
+					console.log(error);
+				});
+			}
+
+		//单个删除
+		tbody.onclick = function(event){
+			var target = event.target;
+			if(target.title==="删除"){
+					// 获取DOM节点的自定义属性的属性值
+					var id = target.getAttribute('data-id');
+					// 传递参数进行删除
+					deleteArticleById({id:id});
+			}
+			//修改 获取指定id的数据
+			if(target.title==="编辑"){
+				//修改按钮,填充表单内容
+				//可以通过修改按钮,获取当前对象的id,拿到id之后,向后台要数据
+				var id = target.getAttribute('data-id'); 
+				//给模态框填充未修改时的信息
+				//用来筛选信息的函数
+				getAjax('/index/findArticleByCategoryId','get',null,function(res){
+					//追加DOM res就是数据 遍历内部数据,获取指定id对应的数据
+					if(res.data){
+						res.data.forEach(function(item){
+							console.log(res.data);
+							if(item.id == id){
+								$('.modal [type=text]').val(item.title);
+								$('.modal [name="categoryParent"]:selected').val(item.categoryId);
+								$('.modal [type=radio][value='+item.liststyle+']').prop('checked',true);
+								$('.modal [name="categoryComment"]').val(item.content);
+							}
+						});
+					}							
+				},function(error){
+					console.log(error);
+				});
+			}
+		}
+
+		//单个删除函数	
+		function deleteArticleById(obj){
+				getAjax('/manager/article/deleteArticleById','get',obj,function(res){
+					findArticleByCategoryId();
+				},function(error){
+					console.log(error);
+				});
+			}
+
+		//查询数据初始化页面
+		function findArticleByCategoryId(event){
+			getAjax('/index/findArticleByCategoryId','get',null,function(res){
+			//res.data裁切
+			var arr = (res.data).slice(1,10);
+			//追加DOM res就是数据 遍历内部数据,生成tr追加到tbody上
+			var str = '';
+			if(arr){
+				arr.forEach(function(item){
+					str += '<tr>';
+					str += `
+						<td><input type="checkbox" value="`+item.id+`"></td>
+						<td>`+item.title+`</td>
+						<td>`+null+`</td>
+						<td>`+item.liststyle+`</td>
+						<td>`+item.author+`</td>
+						<td>`+item.publishtime+`</td>
+						<td>`+item.readtimes+`</td>
+						<td>
+							<i title="编辑" data-id="`+item.id+`" class="fa fa-pencil-square-o" aria-hidden="true" data-toggle="modal" data-target="#myModal" id="update"></i>
+							<i title="删除" data-id="`+item.id+`" class="fa fa-trash-o" aria-hidden="true" id="delete"></i>
+						</td>
+		  			`;
+		  			str += '<tr>';
+				});
+			}
+			tbody.innerHTML = str;
+		},function(error){
+			console.log(error);
+		});
+		}
+		
+		//分页显示给表格添加数据
+		pageDiv.onclick = function(event){
+			var target = event.target;
+			var p = +target.innerText;
+			if(p){
+				getAjax('/index/findArticleByCategoryId','get',null,function(res){
+			//res.data裁切
+			var arr = (res.data).slice(p*10-10, p*10);
+			//追加DOM res就是数据 遍历内部数据,生成tr追加到tbody上
+			var str = '';
+			if(arr){
+				arr.forEach(function(item){
+					str += '<tr>';
+					str += `
+						<td><input type="checkbox" value="`+item.id+`"></td>
+						<td>`+item.title+`</td>
+						<td>`+null+`</td>
+						<td>`+item.liststyle+`</td>
+						<td>`+item.author+`</td>
+						<td>`+item.publishtime+`</td>
+						<td>`+item.readtimes+`</td>
+						<td>
+							<i title="编辑" data-id="`+item.id+`" class="fa fa-pencil-square-o" aria-hidden="true" data-toggle="modal" data-target="#myModal" id="update"></i>
+							<i title="删除" data-id="`+item.id+`" class="fa fa-trash-o" aria-hidden="true" id="delete"></i>
+						</td>
+		  			`;
+		  			str += '<tr>';
+				});
+			}
+			tbody.innerHTML = str;
+			},function(error){
+				console.log(error);
+			});
+			}
+		}
+
+
+	</script>
+	
+	<!-- 咨询管理 -->
+	<div class="info-manage">
+		<!-- 按钮组 -->
+		<div class="btn-div">
+        	<select name="categoryParent" class=" beginmodal">
+        		<option value="">请选择</option>
+        	</select>
+			<!-- Button trigger modal -->
+			<button type="button" class="btn btn-primary btn-success  btn-sm" data-toggle="modal" data-target="#myModal" id="add">
+			新增
+			</button>
+			<button type="button" class="btn btn-danger btn-sm">批量删除</button>
+		</div>
+		<!-- 表格组 -->
+		<div class="table-div text-center">
+			<table class="table table-bordered">
+			  <thead>
+			  	<tr>
+			  		<th class="text-center">编号</th>
+				  	<th class="text-center">文章标题</th>
+				  	<th class="text-center">所属栏目</th>
+				  	<th class="text-center">排列方式</th>
+				  	<th class="text-center">作者</th>
+				  	<th class="text-center">发布时间</th>
+				  	<th class="text-center">阅读次数</th>
+				  	<th class="text-center">操作</th>
+			  	</tr>
+			  </thead>
+			  <tbody>
+			  	<!-- <td>编号</td>
+				  	<td>文章标题</td>
+				  	<td>所属栏目</td>
+				  	<td>排列方式</td>
+				  	<td>作者</td>
+				  	<td>发布时间</td>
+				  	<td>阅读次数</td>
+			  		<i title="编辑" class="fa fa-pencil-square-o" aria-hidden="true"></i>
+			  		<i title="删除" class="fa fa-trash-o" aria-hidden="true"></i>
+			  	</td> -->
+			  </tbody>
+			</table>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+	  <div class="modal-dialog" role="document">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	      	<button type="button" class="close pull-left" data-dismiss="modal" aria-label="close"><span>< 返回</span></button>
+	        <h4 class="modal-title pull-right" id="myModalLabel">发布资讯</h4>
+	      </div>
+	      <div class="modal-body">
+	        <div>标题
+				<input type="text" class="form-control">
+	        </div>
+	        <div>
+	        	父栏目 
+	        	<select name="categoryParent" class="form-control beginmodals">
+	        		<option value="">请选择</option>
+	        	</select>
+	        </div>
+	        <div>
+	        	<label for="">列表样式</label>
+	        	<div class="radio">
+	        		<label for="style-one">
+	        			<input type="radio" id="style-one" name="infolist" value="style-one">
+	        			<img src="./images/style-one.jpg" alt="">
+	        		</label>
+	        		<label for="style-two">
+	        			<input type="radio" id="style-two" name="infolist" value="style-two">
+	        			<img src="./images/style-two.jpg" alt="">
+	        		</label>	
+	        	</div>
+	        </div>
+	        <div>
+	        	正文
+	        	<textarea class="form-control" name="categoryComment" id="" cols="10" rows="6"></textarea>
+	        </div>
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-default btn-success" data-dismiss="modal" id="handup">发布</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+
+	<!-- 分页 -->
+	<div align="center">
+		<nav aria-label="Page navigation" class="page-div">
+			<ul class="pagination">
+			  <li id="one"><a href="#">1</a></li>
+			  <li><a href="#">2</a></li>
+			  <li><a href="#">3</a></li>
+			  <li><a href="#">4</a></li>
+			  <li><a href="#">5</a></li>
+			</ul>
+		</nav>
+	</div>
+</div>

@@ -1,0 +1,278 @@
+<div>
+<!-- 点击新增后,右上角弹出提示框 -->
+	<style>
+		.btn-div{
+			margin: 0 22px;
+		}
+		.marginTop{
+			margin: 5px;
+			font-family: "宋体";
+			font-size: 20px;
+			line-height: 40px;
+		}
+		.blueborder{
+			border: 1px solid skyblue;
+			box-shadow: 3px 3px 3px skyblue;
+			margin: 10px 22px;
+			padding: 1px;
+			width: 380px;
+			height: 400px;
+		}
+		.blueborder>img{
+			width: 150px;
+			height: 150px;
+			border-radius: 50%;
+			margin-right: auto;
+			margin-left: auto;
+			margin-top: 5px;
+		}
+		.caption div{
+			margin-left: 3%;
+		}
+		body{
+			overflow-x: hidden;
+		}
+		.info-div{
+			width: 200px;
+			height: 150px;
+			position: absolute;
+			top: 10px;
+			right: -210px;
+			opacity: 0;
+		}
+	</style>
+	<script>
+		var btnsDiv = document.getElementsByClassName('btn-div')[0];
+		var pageDiv = document.getElementsByClassName('page-div')[0];
+		var marginTop = document.getElementsByClassName('marginTop')[0];
+
+		//初始化页面
+		findAllUser();
+
+		//新增
+		btnsDiv.onclick = function(event){
+			var target = event.target;
+			if(target.innerText==='新增'){
+
+				//清空表单数据,显示模态框
+				$('.modal [type=text],.modal [type=password]').val(null);	
+			}
+		}
+
+		//点击确认时的事件
+		$('#handup').click(function(){
+			//获取数据,封装成对象,传递给后台
+			var username = $('.modal [name="username"]').val();
+			var password = $('.modal [name="pword"]').val();
+			var nickname = $('.modal [name="nickname"]').val();
+			var email = $('.modal [name="email"]').val();
+			// console.log(name,parentId,comment);
+			if(username&&password&&nickname&&email){
+				// 封装数据,对接口
+				var obj = {
+					username:username,
+					password:password,
+					nickname:nickname,
+					email:email
+				};	
+				saveOrUpdateUser(obj);				
+				//提交数据给后台
+				//提交成功后的回调函数里,更新数据,关闭模态框.
+				$('#myModal').modal('hide');
+			}else{
+				alert('请输入完整的信息');
+			}
+		});
+
+		//新增的函数
+		function saveOrUpdateUser(obj){
+				getAjax('/manager/user/saveOrUpdateUser','post',obj,function(res){
+					findAllUser();
+				},function(error){
+					console.log(error);
+				});
+			}
+		//查找所有用户
+		function findAllUser(event){
+				getAjax('/manager/user/findAllUser','get',null,function(res){
+				//res.data裁切
+				var arr = (res.data).slice(0,9);
+				//追加DOM res就是数据 遍历内部数据,生成tr追加到tbody上
+				var str = '';
+				if(arr){
+					arr.forEach(function(item){
+						str += `
+							<div class="col-sm-4 blueborder">
+								<img src="./images/logo.png" alt="">
+								<div class="caption">
+									<div class="row">
+										<div class="col-sm-4 ">用户名</div>
+										<div class="col-sm-7 ">`+item.username+`</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-4 ">真实姓名</div>
+										<div class="col-sm-7 ">`+item.nickname+`</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-4 ">注册时间</div>
+										<div class="col-sm-7 ">`+item.regTime+`</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-4 ">Emai</div>
+										<div class="col-sm-7 ">`+item.email+`</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-4 ">状态</div>
+										<div class="col-sm-7 ">`+item.enabled+`</div>
+									</div>
+								</div>
+							</div>
+			  			`;
+						
+					});
+				}
+				marginTop.innerHTML = str;
+			},function(error){
+				console.log(error);
+			});
+		}
+		//分页显示添加数据
+		pageDiv.onclick = function(event){
+			var target = event.target;
+			var p = +target.innerText;
+			if(p){
+				getAjax('/manager/user/findAllUser','get',null,function(res){
+				// console.log(res.data);
+				//res.data裁切
+				var arr = (res.data).slice(p*10-10, p*10-1);
+				//追加DOM res就是数据 遍历内部数据,生成tr追加到tbody上
+				var str = '';
+				if(arr){
+					arr.forEach(function(item){
+						str += `
+							<div class="col-sm-4 blueborder">
+								<img src="./images/logo.png" alt="">
+								<div class="caption">
+									<div class="row">
+										<div class="col-sm-4 ">用户名</div>
+										<div class="col-sm-7 ">`+item.username+`</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-4 ">真实姓名</div>
+										<div class="col-sm-7 ">`+item.nickname+`</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-4 ">注册时间</div>
+										<div class="col-sm-7 ">`+item.regTime+`</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-4 ">Emai</div>
+										<div class="col-sm-7 ">`+item.email+`</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-4 ">状态</div>
+										<div class="col-sm-7 ">`+item.enabled+`</div>
+									</div>
+								</div>
+							</div>
+			  			`;
+						
+					});
+				}
+				marginTop.innerHTML = str;
+			},function(error){
+				console.log(error);
+			});
+			}
+		}
+
+	</script>
+	<script>
+		$(function(){
+			// 点击删除按钮之后,弹出框显示,三秒后消失
+			$('#handup').click(function(){
+				// $('.info-div').removeClass('hidden');
+				// $('.info-div').fadeIn(1000);
+				$('.info-div').animate({
+					right:'10px',
+					opacity:1
+				});
+				// 2秒之后消失,消失时间持续1秒
+				setTimeout(function(){
+					$('.info-div').fadeOut(1000,function(){
+						$('.info-div').css({
+							display:'block',
+							right: '-210px',
+							opacity: 0
+						});
+					});
+				},2000);
+			});
+		});
+	</script>
+	<!-- 用户管理 -->
+	<div class="user-manage">
+		<!-- 按钮组 -->
+		<div class="btn-div">
+			<!-- Button trigger modal -->
+			<button type="button" class="btn btn-primary btn-success btn-sm" data-toggle="modal" data-target="#myModal" id="add">
+			新增
+			</button>
+		</div>
+		<!-- 用户白色模块 -->		
+		<div class="row marginTop"">		
+		</div>
+
+		<!-- Modal -->
+		<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		      	<button type="button" class="close pull-left" data-dismiss="modal" aria-label="close"><span>< 返回</span></button>
+		        <h4 class="modal-title pull-right" id="myModalLabel">添加用户</h4>
+		      </div>
+		      <div class="modal-body">
+		        <div>用户名
+					<input name="username" type="text" class="form-control">
+		        </div>
+		        <div>密码
+					<input name="pword" type="password" class="form-control">
+		        </div>
+		        <div>确认密码
+					<input name="ypword" type="password" class="form-control">
+		        </div>
+		        <div>真实姓名
+					<input name="nickname" type="text" class="form-control">
+		        </div>
+		        <div>邮箱
+					<input name="email" type="text" class="form-control">
+		        </div>
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-default btn-success" data-dismiss="modal" id="handup">确认</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+
+	<!-- 分页 -->
+	<div align="center">
+		<nav aria-label="Page navigation" class="page-div">
+			<ul class="pagination">
+			  <li id="one"><a href="#">1</a></li>
+			  <li><a href="#">2</a></li>
+			  <li><a href="#">3</a></li>
+			  <li><a href="#">4</a></li>
+			  <li><a href="#">5</a></li>
+			</ul>
+		</nav>
+	</div>
+
+	<!-- 右上角的提示框 -->
+	<div class="info-div">
+		<div class="alert alert-success alert-dismissable">
+			<div>提示:操作成功</div>
+		</div>				
+	</div>
+	</div>
+</div>
